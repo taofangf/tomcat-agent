@@ -49,7 +49,7 @@ public class Tomcat7RequestTransform implements TomcatRequestTransform {
             // 重置变量为空，否则Request对象保持不变造成整体异常
             CtMethod recycleMethod = ctClass.getDeclaredMethod("recycle");
 
-            recycleMethod.insertAfter("$0.requestWrapper = null");
+            recycleMethod.insertAfter("$0.requestWrapper = null;");
 
             return ctClass.toBytecode();
         } catch (Exception e) {
