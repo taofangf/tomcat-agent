@@ -1,8 +1,6 @@
 package com.github.jarvis.servlet;
 
 
-import com.github.jarvis.util.IOUtils;
-
 import javax.servlet.ServletInputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletRequestWrapper;
@@ -41,8 +39,11 @@ public class BufferedServletRequestWrapper extends HttpServletRequestWrapper {
 
     private void cacheInputStream() throws IOException {
         cacheBytes = new ByteArrayOutputStream();
-        IOUtils.copy(super.getInputStream(), cacheBytes);
-
+        byte[] buffer = new byte[4096];
+        int n = 0;
+        while (-1 != (n = super.getInputStream().read(buffer))) {
+            cacheBytes.write(buffer, 0, n);
+        }
     }
 
     @Override
