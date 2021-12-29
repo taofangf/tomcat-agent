@@ -26,9 +26,7 @@ public class Tomcat8RequestTransform implements TomcatRequestTransform {
             "            applicationRequest = facade;\n" +
             "        }\n" +
             "        try {\n" +
-            "            if (applicationRequest == null) {\n" +
-            "                applicationRequest = new com.github.jarvis.servlet.BufferedServletRequestWrapper(facade);\n" +
-            "            }\n" +
+        "                applicationRequest = new com.github.jarvis.servlet.BufferedServletRequestWrapper(facade);\n" +
             "        } catch (java.lang.Exception e) {\n" +
             "            e.printStackTrace();\n" +
             "        }\n" +

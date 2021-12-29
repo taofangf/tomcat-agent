@@ -71,8 +71,11 @@ public class BufferedServletRequestWrapper extends HttpServletRequestWrapper {
 
     private void cacheInputStream() throws IOException {
         cacheBytes = new ByteArrayOutputStream();
-        IOUtils.copy(super.getInputStream(), cacheBytes);
-
+        byte[] buffer = new byte[4096];
+        int n = 0;
+        while (-1 != (n = super.getInputStream().read(buffer))) {
+            cacheBytes.write(buffer, 0, n);
+        }
     }
 
     @Override
@@ -129,9 +132,7 @@ public class Tomcat8RequestTransform implements TomcatRequestTransform {
             "            applicationRequest = facade;\n" +
             "        }\n" +
             "        try {\n" +
-            "            if (applicationRequest == null) {\n" +
-            "                applicationRequest = new com.github.jarvis.servlet.BufferedServletRequestWrapper(facade);\n" +
-            "            }\n" +
+        "                applicationRequest = new com.github.jarvis.servlet.BufferedServletRequestWrapper(facade);\n" +
             "        } catch (java.lang.Exception e) {\n" +
             "            e.printStackTrace();\n" +
             "        }\n" +
@@ -158,6 +159,7 @@ public class Tomcat8RequestTransform implements TomcatRequestTransform {
     }
 
 }
+
 ```
 核心操作就是上面所说的包装Tomcat内部的HttpServletRequest来满足诉求。
 
@@ -169,43 +171,42 @@ public class Tomcat8RequestTransform implements TomcatRequestTransform {
 -javaagent:/path/tomcat-agent.jar
 ```
 
-### 注意
-如果报BufferedServletRequestWrapper类不存在的问题则需要将`BufferedServletInputStream`和`BufferedServletRequestWrapper`
-这两个类打成jar包放到tomcat目录下（catalina/lib），让初始化的时候能够加载到即可。
+## 注意
+- 如果报BufferedServletRequestWrapper类不存在的问题则需要将`BufferedServletInputStream`和`BufferedServletRequestWrapper`
+  这两个类打成jar包放到tomcat目录下（catalina/lib），让初始化的时候能够加载到即可。
 
 
-## 踩坑
-由于考虑到适配不同的Tomcat版本,就分别调试了7.x、8.0.x、8.5x、9.x、10.x;发现在8.0之前有点不一样，于是将字节码修改的部分做了根据Tomcat版本
-来做不同的调整。以下为Tomcat 7.0.109 版本部分代码
-```java
-package org.apache.catalina.connector;
-/**
- * Wrapper object for the Coyote request.
- *
- * @author Remy Maucherat
- * @author Craig R. McClanahan
- */
-public class Request implements HttpServletRequest {
-
-    /**
-     * The facade associated with this request.
-     */
-    protected RequestFacade facade = null;
-
-    // 部分代码省略...
-
-    /**
-     * @return the <code>ServletRequest</code> for which this object
-     * is the facade.  This method must be implemented by a subclass.
-     */
-    public HttpServletRequest getRequest() {
-        if (facade == null) {
-            facade = new RequestFacade(this);
-        }
-        return facade;
-    }
-}
-
-```
-就是这一部分的差异，那我就直接参考高版本调整了一下。
+- 由于考虑到适配不同的Tomcat版本,就分别调试了7.x、8.0.x、8.5x、9.x、10.x;发现在8.0之前有点不一样，于是将字节码修改的部分做了根据Tomcat版本来做不同的调整。以下为Tomcat 7.0.109 版本部分代码
+  
+  ```java
+  package org.apache.catalina.connector;
+  /**
+   * Wrapper object for the Coyote request.
+   *
+   * @author Remy Maucherat
+   * @author Craig R. McClanahan
+   */
+  public class Request implements HttpServletRequest {
+  
+      /**
+       * The facade associated with this request.
+       */
+      protected RequestFacade facade = null;
+  
+      // 部分代码省略...
+  
+      /**
+       * @return the <code>ServletRequest</code> for which this object
+       * is the facade.  This method must be implemented by a subclass.
+       */
+      public HttpServletRequest getRequest() {
+          if (facade == null) {
+              facade = new RequestFacade(this);
+          }
+          return facade;
+      }
+  }
+  ```
+  
+  就是这一部分的差异，那我就直接参考高版本调整了一下。
 
